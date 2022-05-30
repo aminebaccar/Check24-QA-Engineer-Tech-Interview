@@ -1,21 +1,27 @@
 package pages;
 
+import exceptions.InvalidOptionException;
+import org.junit.Assert;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import steps.CucumberHooks;
+import util.JavaScriptEvents;
 
-import static org.junit.Assert.*;
+import java.util.List;
 
 public class DSLFormPage {
 
     @FindBy(xpath = "//a[text()='Akzeptieren']")
-    private WebElement accept_button;
+    private WebElement acceptButton;
 
     @FindBy(xpath = "//input[@placeholder='PLZ oder Ort']")
-    private WebElement plz_oder_ort;
+    private WebElement plzOderOrt;
 
     @FindBy(xpath = "//input[@placeholder='Straße']")
     private WebElement strasse;
@@ -26,14 +32,26 @@ public class DSLFormPage {
     @FindBy(xpath = "(//label[contains(text(), '  Nein  ')])[1]")
     private WebElement ongoingContractNein;
 
+    @FindBy(xpath = "(//label[contains(text(), '  Ja  ')])[1]")
+    private WebElement ongoingContractJa;
+
     @FindBy(xpath = "//span[text()='nur Internet ']")
     private WebElement nurInternet;
+
+    @FindBy(xpath = "//label[contains(text(),'Internet mit extra TV-Paket')]")
+    private WebElement internetMitExtraTvPaket;
+
+    @FindBy(xpath = "//label[contains(text(),'alle Tarife')]")
+    private WebElement alleTarife;
 
     @FindBy(xpath = "//input[@type='checkbox' and @class='tko-checkbox']")
     private WebElement wlanRouter;
 
     @FindBy(xpath = "(//label[contains(text(), '  Nein  ')])[2]")
     private WebElement under30Nein;
+
+    @FindBy(xpath = "(//label[contains(text(), '  Ja  ')])[2]")
+    private WebElement under30Ja;
 
     @FindBy(xpath = "//input[@placeholder='Mobilfunknummer eingeben']")
     private WebElement phoneNumber;
@@ -43,6 +61,11 @@ public class DSLFormPage {
 
     @FindBy(xpath = "//button[@type='submit']")
     private WebElement submit;
+
+    @FindBy(xpath = "//label/img")
+    private List<WebElement> radioButtonWrappers;
+    @FindBy(xpath = "//input[@placeholder='Anbieter eingeben/auswählen']")
+    private WebElement providerInput;
 
     private WebDriver webDriver;
     private Actions actions;
@@ -54,12 +77,12 @@ public class DSLFormPage {
     }
 
     public void clickOnAkzepterien() {
-        accept_button.click();
+        acceptButton.click();
     }
 
     public void inputInPLZOderOrt(String plzOderOrt) {
-        plz_oder_ort.sendKeys(plzOderOrt);
-        plz_oder_ort.sendKeys(Keys.RETURN);
+        this.plzOderOrt.sendKeys(plzOderOrt);
+        this.plzOderOrt.sendKeys(Keys.RETURN);
     }
 
     public void inputInStrasse(String strasse) {
@@ -71,20 +94,34 @@ public class DSLFormPage {
         this.nr.sendKeys(nr);
     }
 
-    public void clickOnNeinForOngoingContract() {
-        ongoingContractNein.click();
+    public void clickOnJaOderNeinForOngoingContract(String jaOderNein) throws InvalidOptionException {
+        if ("Ja".equalsIgnoreCase(jaOderNein)) ongoingContractJa.click();
+        else if ("Nein".equalsIgnoreCase(jaOderNein)) ongoingContractNein.click();
+        else throw new InvalidOptionException();
     }
 
-    public void clickOnNurInternet() {
-        nurInternet.click();
+    public void clickOnTarifeOption(String tarifeOption) throws InvalidOptionException {
+        if (tarifeOption.toLowerCase().contains("nur internet"))
+            nurInternet.click();
+        else if (tarifeOption.toLowerCase().contains("internet mit extra tv-paket"))
+            internetMitExtraTvPaket.click();
+        else if (tarifeOption.toLowerCase().contains("alle tarife"))
+            alleTarife.click();
+        else
+            throw new InvalidOptionException();
     }
 
     public void clickOnWLANRouter() {
-        actions.moveToElement(wlanRouter).click().build().perform();
+        JavaScriptEvents.clickByJavaScript(wlanRouter);
     }
 
-    public void clickOnNeinForUnder30() {
-        actions.moveToElement(under30Nein).click().build().perform();
+    public void clickOnNeinForUnder30(String jaOderNein) throws InvalidOptionException {
+        if ("Ja".equalsIgnoreCase(jaOderNein)) {
+            JavaScriptEvents.clickByJavaScript(under30Nein);
+        } else if ("Nein".equalsIgnoreCase(jaOderNein)) {
+            JavaScriptEvents.clickByJavaScript(under30Nein);
+        } else
+            throw new InvalidOptionException();
     }
 
     public void inputPhoneNumber(String phoneNumber) {
@@ -100,10 +137,33 @@ public class DSLFormPage {
     }
 
     public void assertSubmittedSuccessfully() {
-        assertNotSame("https://www.check24.de/dsl/input2/", webDriver.getCurrentUrl());
+        WebDriverWait wait = CucumberHooks.getWebDriverWait();
+        wait.until(ExpectedConditions.urlContains("https://www.check24.de/dsl/input2/ergebnisliste"));
     }
 
-    public void clickOnZuruck(){
+    public void clickOnZuruck() {
         zuruck.click();
     }
+
+    public void assertRadioWrappersExist() {
+        Assert.assertEquals(6, radioButtonWrappers.size());
+    }
+
+    public void clickOnProvider(int order) {
+        actions.moveToElement(radioButtonWrappers.get(order)).click().build().perform();
+    }
+
+    public String getInputValueFromProviderInput() {
+        return providerInput.getAttribute("value");
+    }
+
+    public void checkThatPLZOderOrtIsHighlightedInRed() {
+        assertInputHighlightedInRed(plzOderOrt);
+    }
+
+    public void assertInputHighlightedInRed(WebElement input) {
+        Assert.assertEquals("tko-textinput tko-error-field", input.getAttribute("class"));
+    }
 }
+
+

@@ -3,6 +3,8 @@ package util;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 public class PropertyReader {
@@ -18,7 +20,7 @@ public class PropertyReader {
 
     private void loadProperties() {
         try {
-            inputStream = new FileInputStream("src/test/resources/config.properties");
+            inputStream = Files.newInputStream(Paths.get("src/test/resources/config.properties"));
             properties.load(inputStream);
         } catch (IOException e) {
             System.out.print("Unable to load config.properties");
